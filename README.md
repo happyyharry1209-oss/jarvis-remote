@@ -16,7 +16,7 @@ The pairing key is valid for one connection and expires after ten minutes.
 ## Use from home or away
 
 Keep the computer awake, JARVIS running and Tailscale connected. The same
-`https://happyyharry.github.io/jarvis-remote/` address works over home Wi-Fi and
+`https://happyyharry1209-oss.github.io/jarvis-remote/` address works over home Wi-Fi and
 cellular data.
 
 If JARVIS is stopped, the site still opens from GitHub Pages and displays an
