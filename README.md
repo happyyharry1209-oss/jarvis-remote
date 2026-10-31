@@ -12,6 +12,8 @@ through the private Tailscale network.
 4. In Safari, tap **Share** and then **Add to Home Screen**.
 
 The pairing key is valid for one connection and expires after ten minutes.
+Tap the speaker icon once to unlock JARVIS audio in Safari. After that, voice
+replies play automatically; tap it again to silence phone playback.
 
 ## Use from home or away
 
