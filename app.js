@@ -75,7 +75,10 @@ function setStatus(text, on = false) {
 function setOnline(online) {
   state.online = online;
   refs.offline.hidden = online;
-  if (!online) setStatus("離線", false);
+  if (!online) {
+    setStatus("離線", false);
+    if (!refs.emptyState.hidden) refs.emptyState.textContent = "JARVIS 離線";
+  }
 }
 
 function toast(message) {
