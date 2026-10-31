@@ -42,6 +42,7 @@ const state = {
   online: false,
   phoneAudioEnabled: localStorage.getItem("jarvis_phone_audio") !== "off",
   audioContext: null,
+  audioUnlocked: false,
   audioNextTime: 0,
   audioSources: new Set(),
 };
@@ -392,7 +393,12 @@ function updatePhoneAudioButton() {
     state.phoneAudioEnabled ? "true" : "false"
   );
   refs.audioToggle.firstElementChild.textContent =
-    state.phoneAudioEnabled ? "🔊" : "🔇";
+    state.phoneAudioEnabled
+      ? (state.audioUnlocked ? "🔊" : "🔈")
+      : "🔇";
+  refs.audioToggle.title = state.phoneAudioEnabled
+    ? (state.audioUnlocked ? "手機聲音已開啟" : "點一下以啟用手機聲音")
+    : "手機聲音已關閉";
 }
 
 async function unlockPhoneAudio() {
@@ -409,6 +415,7 @@ async function unlockPhoneAudio() {
       return null;
     }
   }
+  state.audioUnlocked = state.audioContext.state === "running";
   return state.audioContext;
 }
 
@@ -449,6 +456,16 @@ async function queuePhoneAudio(buffer) {
 }
 
 async function togglePhoneAudio() {
+  if (state.phoneAudioEnabled && !state.audioUnlocked) {
+    const context = await unlockPhoneAudio();
+    updatePhoneAudioButton();
+    toast(
+      context?.state === "running"
+        ? "手機聲音已開啟"
+        : "再點一下以啟用手機聲音"
+    );
+    return;
+  }
   state.phoneAudioEnabled = !state.phoneAudioEnabled;
   localStorage.setItem(
     "jarvis_phone_audio",
@@ -716,8 +733,13 @@ refs.disconnect.addEventListener("click", () => {
 
 async function initialize() {
   updatePhoneAudioButton();
-  document.addEventListener("pointerdown", () => {
-    if (state.phoneAudioEnabled) unlockPhoneAudio();
+  document.addEventListener("pointerdown", (event) => {
+    if (
+      state.phoneAudioEnabled &&
+      !event.target.closest?.("#audio-toggle")
+    ) {
+      unlockPhoneAudio().then(updatePhoneAudioButton);
+    }
   }, { once: true });
   const params = new URLSearchParams(location.search);
   const queryBackend = params.get("backend") || "";
