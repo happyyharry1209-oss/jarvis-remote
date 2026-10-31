@@ -22,6 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Build PWA icons
+        run: |
+          for source in icons/*.png.b64; do
+            base64 --decode "$source" > "${source%.b64}"
+          done
       - uses: actions/configure-pages@v5
         with:
           enablement: true
