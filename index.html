@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07090f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JARVIS">
+  <title>JARVIS Remote</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="offline-banner" hidden>JARVIS 離線 · 電腦或 Tailscale 未連線</div>
+  <header>
+    <div class="brand"><em>J</em>ARVIS</div>
+    <div class="status" id="status"><span class="dot"></span><span id="status-text">未連線</span></div>
+    <div class="secure" id="secure" hidden>AES-GCM</div>
+  </header>
+
+  <div class="shell">
+    <aside>
+      <section class="panel" id="pair-panel">
+        <div class="eyebrow">REMOTE ACCESS</div>
+        <h1>連接你的 JARVIS</h1>
+        <p class="muted">在電腦上按 Remote Control，再掃描 QR code。第一次也可以手動輸入連線位址和一次性金鑰。</p>
+        <form id="pair-form">
+          <label for="backend">後端位址</label>
+          <input id="backend" inputmode="url" autocomplete="url"
+                 placeholder="https://laptop-sjbbf3bk.tail84c23f.ts.net">
+          <label for="pair-key">一次性金鑰</label>
+          <input id="pair-key" inputmode="text" maxlength="8"
+                 autocomplete="one-time-code" autocapitalize="characters"
+                 spellcheck="false" placeholder="ABCDEFGH">
+          <button id="pair-button" type="submit">連線 JARVIS</button>
+          <p class="error" id="pair-error" role="alert"></p>
+        </form>
+        <div class="install-tip">
+          <strong>安裝到 iPhone／iPad</strong>
+          <span>用 Safari 開啟後，按「分享」→「加入主畫面」。</span>
+        </div>
+      </section>
+
+      <section class="panel connection" id="connection-panel" hidden>
+        <div class="eyebrow">CONNECTED TO</div>
+        <div id="backend-display"></div>
+        <button class="quiet" id="disconnect" type="button">中斷並重新配對</button>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <section id="feed" aria-live="polite" aria-label="JARVIS conversation">
+        <div class="empty-state" id="empty-state">尚未連接 JARVIS</div>
+      </section>
+      <div class="composer">
+        <label class="icon-button" for="file-input" title="傳送檔案">
+          <span aria-hidden="true">📎</span>
+          <span class="sr-only">傳送檔案</span>
+        </label>
+        <input id="file-input" type="file" multiple hidden>
+        <input id="command" autocomplete="off" placeholder="輸入給 JARVIS 的指令…">
+        <button class="icon-button" id="mic" type="button" title="語音輸入">
+          <span aria-hidden="true">🎤</span>
+          <span class="sr-only">語音輸入</span>
+        </button>
+        <button class="wake" id="wake" type="button" hidden>WAKE</button>
+        <button class="send" id="send" type="button">SEND</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" role="status"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
