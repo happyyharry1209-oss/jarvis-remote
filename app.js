@@ -414,20 +414,27 @@ function formatSize(bytes) {
 }
 
 function addFileCard(name, size, href = "") {
-  const card = document.createElement(href ? "a" : "div");
+  const existing = [...refs.feed.querySelectorAll(".message.file")].find(
+    (node) => node.dataset.fileName === name && node.dataset.fileSize === String(size)
+  );
+  if (existing) return;
+
+  const card = document.createElement("a");
   card.className = "message file";
-  if (href) {
-    card.href = href;
-    card.target = "_blank";
-    card.rel = "noopener";
-  }
+  card.dataset.fileName = name;
+  card.dataset.fileSize = String(size);
+  card.href = href || endpoint(
+    `/uploads/${encodeURIComponent(name)}?token=${encodeURIComponent(state.token)}`
+  );
+  card.target = "_blank";
+  card.rel = "noopener";
   const icon = document.createElement("span");
   icon.textContent = fileIcon(name);
   const details = document.createElement("div");
   const title = document.createElement("span");
   title.textContent = name;
   const meta = document.createElement("small");
-  meta.textContent = `${formatSize(size)}${href ? " · 下載" : " · 已收到"}`;
+  meta.textContent = `${formatSize(size)} · 下載`;
   details.append(title, meta);
   card.append(icon, details);
   refs.feed.appendChild(card);
