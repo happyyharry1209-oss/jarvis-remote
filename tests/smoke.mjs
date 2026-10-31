@@ -19,6 +19,7 @@ assert.match(app, /URLSearchParams\(location\.search\)/);
 assert.match(config, /new URL\(/);
 assert.match(app, /\/ws\/phone-audio/);
 assert.match(app, /\/api\/upload/);
+assert.match(app, /允許瀏覽器存取本機網絡/);
 assert.match(config, /Remote backend must use HTTPS/);
 assert.match(worker, /jarvis-shell-v1/);
 assert.equal(manifest.start_url, "./");

@@ -325,7 +325,13 @@ async function pair(backendValue, keyValue) {
     return true;
   } catch (error) {
     await checkHealth();
-    showPairing(error.message || "無法連接 JARVIS。");
+    const failedFetch =
+      error instanceof TypeError || /Failed to fetch/i.test(error.message || "");
+    showPairing(
+      failedFetch
+        ? "無法連接。請確認 Tailscale 已連線，並允許瀏覽器存取本機網絡。"
+        : error.message || "無法連接 JARVIS。"
+    );
     return false;
   } finally {
     refs.pairButton.disabled = false;
