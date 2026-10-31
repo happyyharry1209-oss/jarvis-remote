@@ -5,6 +5,7 @@ const refs = {
   status: document.querySelector("#status"),
   statusText: document.querySelector("#status-text"),
   secure: document.querySelector("#secure"),
+  audioToggle: document.querySelector("#audio-toggle"),
   aside: document.querySelector("aside"),
   pairPanel: document.querySelector("#pair-panel"),
   pairForm: document.querySelector("#pair-form"),
@@ -39,6 +40,10 @@ const state = {
   healthTimer: null,
   toastTimer: null,
   online: false,
+  phoneAudioEnabled: localStorage.getItem("jarvis_phone_audio") !== "off",
+  audioContext: null,
+  audioNextTime: 0,
+  audioSources: new Set(),
 };
 
 const AES_SALT = "JARVIS-DASHBOARD-v1";
@@ -191,6 +196,7 @@ function clearSession() {
   state.token = "";
   state.sessionKey = "";
   state.aesKey = null;
+  stopPhoneAudio();
   refs.secure.hidden = true;
   sessionStorage.removeItem(STORAGE.token);
   sessionStorage.removeItem(STORAGE.key);
@@ -201,8 +207,11 @@ function connectSocket() {
   if (!state.backend || !state.token) return;
   state.ws?.close();
   setStatus("連線中", false);
-  const socket = new WebSocket(backendWsUrl(state.backend, "/ws", state.token));
+  const socket = new WebSocket(
+    backendWsUrl(state.backend, "/ws", state.token, { audio: "1" })
+  );
   state.ws = socket;
+  socket.binaryType = "arraybuffer";
 
   socket.onopen = () => {
     setOnline(true);
@@ -211,6 +220,10 @@ function connectSocket() {
     showSystem("Remote session active.");
   };
   socket.onmessage = (event) => {
+    if (event.data instanceof ArrayBuffer) {
+      queuePhoneAudio(event.data);
+      return;
+    }
     let message;
     try {
       message = JSON.parse(event.data);
@@ -370,6 +383,85 @@ async function tryDeviceLogin() {
 
 function socketPath(path, token) {
   return backendWsUrl(state.backend, path, token);
+}
+
+function updatePhoneAudioButton() {
+  refs.audioToggle.classList.toggle("off", !state.phoneAudioEnabled);
+  refs.audioToggle.setAttribute(
+    "aria-pressed",
+    state.phoneAudioEnabled ? "true" : "false"
+  );
+  refs.audioToggle.firstElementChild.textContent =
+    state.phoneAudioEnabled ? "🔊" : "🔇";
+}
+
+async function unlockPhoneAudio() {
+  if (!state.phoneAudioEnabled) return null;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!state.audioContext) {
+    state.audioContext = new AudioCtx({ sampleRate: 24000 });
+  }
+  if (state.audioContext.state === "suspended") {
+    try {
+      await state.audioContext.resume();
+    } catch {
+      return null;
+    }
+  }
+  return state.audioContext;
+}
+
+function stopPhoneAudio() {
+  for (const source of state.audioSources) {
+    try {
+      source.stop();
+    } catch {}
+  }
+  state.audioSources.clear();
+  state.audioNextTime = 0;
+}
+
+async function queuePhoneAudio(buffer) {
+  if (!state.phoneAudioEnabled || !buffer.byteLength) return;
+  const context = await unlockPhoneAudio();
+  if (!context || context.state !== "running") return;
+  const pcm = new Int16Array(buffer);
+  if (!pcm.length) return;
+
+  const audioBuffer = context.createBuffer(1, pcm.length, 24000);
+  const channel = audioBuffer.getChannelData(0);
+  for (let index = 0; index < pcm.length; index += 1) {
+    channel[index] = pcm[index] / 32768;
+  }
+
+  const source = context.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(context.destination);
+  const now = context.currentTime;
+  if (state.audioNextTime < now + 0.06 || state.audioNextTime > now + 2) {
+    state.audioNextTime = now + 0.06;
+  }
+  source.start(state.audioNextTime);
+  state.audioNextTime += audioBuffer.duration;
+  state.audioSources.add(source);
+  source.onended = () => state.audioSources.delete(source);
+}
+
+async function togglePhoneAudio() {
+  state.phoneAudioEnabled = !state.phoneAudioEnabled;
+  localStorage.setItem(
+    "jarvis_phone_audio",
+    state.phoneAudioEnabled ? "on" : "off"
+  );
+  if (state.phoneAudioEnabled) {
+    const context = await unlockPhoneAudio();
+    toast(context?.state === "running" ? "手機聲音已開啟" : "再點一下以啟用手機聲音");
+  } else {
+    stopPhoneAudio();
+    toast("手機聲音已關閉");
+  }
+  updatePhoneAudioButton();
 }
 
 async function sendCommand() {
@@ -610,6 +702,7 @@ refs.command.addEventListener("keydown", (event) => {
 refs.send.addEventListener("click", sendCommand);
 refs.wake.addEventListener("click", wakeJarvis);
 refs.mic.addEventListener("click", toggleMicrophone);
+refs.audioToggle.addEventListener("click", togglePhoneAudio);
 refs.file.addEventListener("change", () => {
   for (const file of refs.file.files) uploadFile(file);
   refs.file.value = "";
@@ -622,6 +715,10 @@ refs.disconnect.addEventListener("click", () => {
 });
 
 async function initialize() {
+  updatePhoneAudioButton();
+  document.addEventListener("pointerdown", () => {
+    if (state.phoneAudioEnabled) unlockPhoneAudio();
+  }, { once: true });
   const params = new URLSearchParams(location.search);
   const queryBackend = params.get("backend") || "";
   const queryKey = params.get("key") || "";

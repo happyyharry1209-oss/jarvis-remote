@@ -14,10 +14,11 @@ export function normalizeBackend(value) {
   return url.origin;
 }
 
-export function backendWsUrl(backend, path, token) {
+export function backendWsUrl(backend, path, token, params = {}) {
   const url = new URL(backend);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = path;
-  url.search = `?token=${encodeURIComponent(token)}`;
+  const query = new URLSearchParams({ token, ...params });
+  url.search = query.toString();
   return url.toString();
 }

@@ -55,6 +55,12 @@ header {
   margin-left: auto; padding: 4px 8px; border: 1px solid rgba(52,211,153,.25);
   border-radius: 5px; color: var(--green); font-size: 9px; letter-spacing: .12em;
 }
+.audio-toggle {
+  display: inline-grid; place-items: center; width: 32px; height: 32px;
+  flex: 0 0 32px; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--surface); color: var(--text); font-size: 15px;
+}
+.audio-toggle.off { opacity: .48; }
 .shell { height: calc(100dvh - 58px - env(safe-area-inset-top)); display: flex; }
 aside {
   width: 320px; flex: 0 0 320px; padding: 22px; overflow-y: auto;
