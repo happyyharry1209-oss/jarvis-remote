@@ -43,6 +43,7 @@ const state = {
   phoneAudioEnabled: localStorage.getItem("jarvis_phone_audio") !== "off",
   audioContext: null,
   audioUnlocked: false,
+  audioUserGesture: false,
   audioNextTime: 0,
   audioSources: new Set(),
 };
@@ -402,7 +403,7 @@ function updatePhoneAudioButton() {
 }
 
 async function unlockPhoneAudio() {
-  if (!state.phoneAudioEnabled) return null;
+  if (!state.phoneAudioEnabled || !state.audioUserGesture) return null;
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   if (!AudioCtx) return null;
   if (!state.audioContext) {
@@ -430,8 +431,12 @@ function stopPhoneAudio() {
 }
 
 async function queuePhoneAudio(buffer) {
-  if (!state.phoneAudioEnabled || !buffer.byteLength) return;
-  const context = await unlockPhoneAudio();
+  if (
+    !state.phoneAudioEnabled ||
+    !state.audioUnlocked ||
+    !buffer.byteLength
+  ) return;
+  const context = state.audioContext;
   if (!context || context.state !== "running") return;
   const pcm = new Int16Array(buffer);
   if (!pcm.length) return;
@@ -457,6 +462,7 @@ async function queuePhoneAudio(buffer) {
 
 async function togglePhoneAudio() {
   if (state.phoneAudioEnabled && !state.audioUnlocked) {
+    state.audioUserGesture = true;
     const context = await unlockPhoneAudio();
     updatePhoneAudioButton();
     toast(
@@ -738,6 +744,7 @@ async function initialize() {
       state.phoneAudioEnabled &&
       !event.target.closest?.("#audio-toggle")
     ) {
+      state.audioUserGesture = true;
       unlockPhoneAudio().then(updatePhoneAudioButton);
     }
   }, { once: true });
